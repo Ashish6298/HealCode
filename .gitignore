@@ -1,0 +1,84 @@
+# ============================
+# HealCode .gitignore
+# ============================
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ----- Virtual Environments -----
+venv/
+.venv/
+env/
+ENV/
+
+# ----- IDE / Editor -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ----- OS Generated -----
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ----- Testing / Coverage -----
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ----- MyPy -----
+.mypy_cache/
+
+# ----- HealCode Cache -----
+.healcode_cache.db
+*.db
+
+# ----- Secrets / Credentials (CONFIDENTIAL) -----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+credentials.json
+service-account*.json
+secrets.yaml
+secrets.yml
+*.secret
+
+# ----- Logs -----
+*.log
+logs/
+
+# ----- Distribution / Build -----
+*.tar.gz
+*.zip
+
+# ----- Node (if present) -----
+node_modules/
+package-lock.json
+yarn.lock
