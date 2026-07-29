@@ -5,7 +5,14 @@ HealCode Configuration Manager
 import os
 import json
 from typing import Optional, Dict, Any
-from healcode.config.models import ProjectConfig, LoggingConfig, CacheConfig, ScanConfig, PluginConfig
+from healcode.config.models import (
+    ProjectConfig,
+    LoggingConfig,
+    CacheConfig,
+    ScanConfig,
+    PluginConfig,
+    BrandingConfig,
+)
 from healcode.exceptions import ConfigurationError
 from healcode.utils.logger import HealCodeLogger
 
@@ -83,12 +90,23 @@ class ConfigManager:
             plugin_dirs=plugin_data.get("plugin_dirs", []),
             disabled_plugins=plugin_data.get("disabled_plugins", [])
         )
+        branding_data = data.get("branding", {})
+        branding_cfg = BrandingConfig(
+            show_banner=branding_data.get("show_banner", True),
+            enable_animation=branding_data.get("enable_animation", True),
+            animation_speed=branding_data.get("animation_speed", "fast"),
+            theme=branding_data.get("theme", "cyberpunk"),
+            compact_mode=branding_data.get("compact_mode", False),
+            color_scheme=branding_data.get("color_scheme", "neon"),
+            alignment=branding_data.get("alignment", "left"),
+        )
 
         return ProjectConfig(
             logging=logging_cfg,
             cache=cache_cfg,
             scan=scan_cfg,
-            plugins=plugin_cfg
+            plugins=plugin_cfg,
+            branding=branding_cfg,
         )
 
     def save_project_config(self) -> None:
@@ -120,5 +138,14 @@ class ConfigManager:
             "plugins": {
                 "plugin_dirs": model.plugins.plugin_dirs,
                 "disabled_plugins": model.plugins.disabled_plugins
+            },
+            "branding": {
+                "show_banner": model.branding.show_banner,
+                "enable_animation": model.branding.enable_animation,
+                "animation_speed": model.branding.animation_speed,
+                "theme": model.branding.theme,
+                "compact_mode": model.branding.compact_mode,
+                "color_scheme": model.branding.color_scheme,
+                "alignment": model.branding.alignment,
             }
         }

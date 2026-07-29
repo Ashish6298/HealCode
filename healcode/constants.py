@@ -6,7 +6,7 @@ import os
 from enum import IntEnum
 
 # Project metadata
-VERSION = "0.9.0"
+VERSION = "1.0.0"
 APP_NAME = "HealCode"
 APP_DESCRIPTION = "AI-powered developer diagnostics CLI"
 

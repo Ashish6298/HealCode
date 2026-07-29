@@ -3,7 +3,7 @@
 HealCode is an AI-powered developer diagnostics CLI tool designed to identify, analyze, and diagnose codebase issues.
 
 ## Version
-v0.9.0 (Phase 9 AI Intelligence & Smart Remediation)
+v1.0.0 (Phase 10 Production Readiness)
 
 ## Features
 - **AI Intelligence Engine**: Optional AI-powered root cause analysis, repair recommendations, and executive summaries (offline-first).

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-07-30
+
+### Added
+- **Diagnostic Scanning Profiles**: Targeted scans using DevOps, Security, Minimal, Full config profiles.
+- **Baseline & Drift Detection**: Save snapshots and compare regressions or resolved issues.
+- **Directory Watch Mode**: Automated polling based incremental rescans.
+- **Mock Plugin Marketplace**: Search, install, update, and validate custom plugins offline.
+- **Reporting Extensions**: CSV and XML format generation.
+- **Safe Scanner Concurrency**: Parallelized execution in Core ScanEngine.
+
 ## [0.9.0] - 2026-07-27
 
 ### Added

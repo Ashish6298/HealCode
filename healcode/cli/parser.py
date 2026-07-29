@@ -16,11 +16,12 @@ def create_parser(commands: Dict[str, BaseCommand]) -> argparse.ArgumentParser:
     
     # Global arguments
     parser.add_argument("--json", action="store_true", help="Output results in machine-readable JSON format.")
+    parser.add_argument("--no-banner", action="store_true", help="Disable the HealCode startup banner for this execution.")
     parser.add_argument("--log-level", default=None, choices=["TRACE", "DEBUG", "INFO", "WARN", "ERROR"],
                         help="Override default logging level.")
 
     # Subcommands
-    subparsers = parser.add_subparsers(dest="command", required=True, title="Commands", metavar="<command>")
+    subparsers = parser.add_subparsers(dest="command", required=False, title="Commands", metavar="<command>")
 
     for command_name, cmd_obj in commands.items():
         cmd_parser = subparsers.add_parser(

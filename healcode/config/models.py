@@ -21,11 +21,22 @@ class ScanConfig:
     exclude_paths: List[str] = field(default_factory=list)
     max_depth: int = 5
     rules_enabled: List[str] = field(default_factory=list)
+    profile: str = "Full"
 
 @dataclass
 class PluginConfig:
     plugin_dirs: List[str] = field(default_factory=list)
     disabled_plugins: List[str] = field(default_factory=list)
+
+@dataclass
+class BrandingConfig:
+    show_banner: bool = True
+    enable_animation: bool = True
+    animation_speed: str = "fast"
+    theme: str = "cyberpunk"
+    compact_mode: bool = False
+    color_scheme: str = "neon"
+    alignment: str = "left"
 
 @dataclass
 class AIConfig:
@@ -47,5 +58,6 @@ class ProjectConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     scan: ScanConfig = field(default_factory=ScanConfig)
     plugins: PluginConfig = field(default_factory=PluginConfig)
+    branding: BrandingConfig = field(default_factory=BrandingConfig)
     ai: AIConfig = field(default_factory=AIConfig)
 

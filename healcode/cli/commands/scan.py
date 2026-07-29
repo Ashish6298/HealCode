@@ -31,6 +31,8 @@ class ScanCommand(BaseCommand):
     def setup_parser(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("target", nargs="?", default=".", help="Target directory or file to scan (default: current directory).")
         parser.add_argument("--no-cache", action="store_true", help="Disable cache reading and writing for this scan.")
+        parser.add_argument("--format", choices=["console", "json", "csv", "xml"], default="console", help="Output format.")
+        parser.add_argument("--profile", help="Diagnostic scanning profile name.")
 
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         target = args.target
@@ -38,6 +40,9 @@ class ScanCommand(BaseCommand):
 
         if args.no_cache:
             config.cache.enabled = False
+
+        if args.profile:
+            config.scan.profile = args.profile
 
         cache_mgr = None
         if config.cache.enabled:
@@ -57,9 +62,7 @@ class ScanCommand(BaseCommand):
             from healcode.core.scanners.dockerfile_scanner import DockerfileScanner
             from healcode.core.scanners.compose_scanner import ComposeScanner
             from healcode.core.scanners.project_scanner import ProjectScanner
-            
             from healcode.core.scanners.cloud_scanner import CloudScanner
-            
             from healcode.core.scanners.code_scanner import CodeScanner
             
             rt_scanner = RuntimeScanner()
@@ -82,7 +85,10 @@ class ScanCommand(BaseCommand):
 
             # Progress bar for visual polish
             findings = []
-            if not getattr(args, "json", False):
+            is_json = getattr(args, "json", False) or args.format == "json"
+            is_structured = is_json or args.format in ["csv", "xml"]
+            
+            if not is_structured:
                 with get_progress_bar() as progress:
                     task = progress.add_task("[cyan]Scanning codebase and system...", total=100)
                     findings = engine.run(target)
@@ -102,22 +108,25 @@ class ScanCommand(BaseCommand):
             from healcode.core.interfaces import IReporter
             reporter: IReporter
             
-            if getattr(args, "json", False):
-                # We need to pass health score & timing to JSON reporter. We can merge it.
+            if is_json:
                 reporter = JSONReporter()
-                # For compatibility, we'll set attributes or construct a custom dict to generate.
                 system_data = os_info.to_dict()
                 system_data["scan_duration_seconds"] = scan_duration
                 system_data["health_score"] = health_score
                 reporter.generate(findings, system_data)
+            elif args.format == "csv":
+                from healcode.reporting.csv_reporter import CSVReporter
+                reporter = CSVReporter()
+                reporter.generate(findings, {})
+            elif args.format == "xml":
+                from healcode.reporting.xml_reporter import XMLReporter
+                reporter = XMLReporter()
+                reporter.generate(findings, os_info.to_dict())
             else:
                 reporter = ConsoleReporter()
-                # Pass health score in context or via console print
-                # We can store health_score on ConsoleReporter or handle it cleanly.
                 if hasattr(reporter, "set_extra_metadata"):
                     getattr(reporter, "set_extra_metadata")(health_score, scan_duration)
                 else:
-                    # Let's dynamically add properties to reporter
                     reporter.health_score = health_score  # type: ignore
                     reporter.scan_duration = scan_duration  # type: ignore
                 reporter.generate(findings, os_info.to_dict())

@@ -1,0 +1,29 @@
+{
+    "logging": {
+        "level": "INFO",
+        "json_format": false
+    },
+    "cache": {
+        "enabled": true,
+        "ttl": 3600,
+        "db_path": ".healcode_cache.db"
+    },
+    "scan": {
+        "exclude_paths": [],
+        "max_depth": 5,
+        "rules_enabled": []
+    },
+    "plugins": {
+        "plugin_dirs": [],
+        "disabled_plugins": []
+    },
+    "branding": {
+        "show_banner": true,
+        "enable_animation": true,
+        "animation_speed": "fast",
+        "theme": "cyberpunk",
+        "compact_mode": false,
+        "color_scheme": "neon",
+        "alignment": "left"
+    }
+}

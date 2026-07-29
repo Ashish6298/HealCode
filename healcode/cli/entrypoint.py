@@ -12,6 +12,11 @@ from healcode.cli.commands.config import ConfigCommand
 from healcode.cli.commands.plugins import PluginsCommand
 from healcode.cli.commands.version import VersionCommand
 from healcode.cli.commands.ai_cmd import AICommand
+from healcode.cli.commands.profile import ProfileCommand
+from healcode.cli.commands.baseline import BaselineCommand
+from healcode.cli.commands.watch import WatchCommand
+from healcode.cli.commands.marketplace import MarketplaceCommand
+from healcode.cli.splash import SplashManager
 from healcode.config.manager import ConfigManager
 from healcode.exceptions import HealCodeError
 from healcode.utils.logger import HealCodeLogger
@@ -29,6 +34,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         PluginsCommand(),
         VersionCommand(),
         AICommand(),
+        ProfileCommand(),
+        BaselineCommand(),
+        WatchCommand(),
+        MarketplaceCommand()
     ]
     commands = {cmd.name: cmd for cmd in commands_list}
 
@@ -57,6 +66,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     logger = HealCodeLogger.get_logger()
     logger.debug("Logging initialized.")
 
+    # Render splash only once before the first command is executed
+    SplashManager(config=config, no_banner=args.no_banner, json_mode=args.json or config.logging.json_format).display()
+
+    # If no command was passed, show the top-level help screen.
+    if args.command is None:
+        parser.print_help()
+        return ExitCode.SUCCESS
+
     # Execute matched command
     cmd_obj = commands.get(args.command)
     if not cmd_obj:
@@ -64,6 +81,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         return ExitCode.INVALID_USAGE
 
     try:
+        # Check for updates unless in json/quiet mode
+        if not json_output:
+            try:
+                from healcode.utils.update import check_for_updates
+                from healcode.constants import VERSION
+                check_for_updates(VERSION, offline_mode=config.ai.offline_mode)
+            except Exception:
+                pass
+        
         exit_code = cmd_obj.run(args, config)
         return exit_code
     except HealCodeError as e:

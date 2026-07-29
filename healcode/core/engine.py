@@ -63,24 +63,63 @@ class ScanEngine:
                 targets.append(target_path)
 
         # Run registered scanners
-        total_scanners = len(self.plugin_loader.scanners)
-        logger.info(f"Running {total_scanners} scanners across {len(targets)} files.")
+        from healcode.core.profiles import PROFILES
+        profile_name = self.config.scan.profile or "Full"
+        allowed_scanners = PROFILES.get(profile_name)
 
-        for scanner_name, scanner in self.plugin_loader.scanners.items():
-            logger.debug(f"Running scanner: {scanner_name}")
+        active_scanners = []
+        for name, scanner in self.plugin_loader.scanners.items():
+            if allowed_scanners is None or name in allowed_scanners:
+                active_scanners.append((name, scanner))
+
+        logger.info(f"Running {len(active_scanners)} scanners (Profile: {profile_name}) across {len(targets)} files.")
+
+        # Handle dependencies: run runtime-scanner first if it's active
+        runtime_scanner_instance = None
+        other_scanners = []
+        for name, scanner in active_scanners:
+            if name == "runtime-scanner":
+                runtime_scanner_instance = scanner
+            else:
+                other_scanners.append((name, scanner))
+
+        # Run runtime-scanner synchronously if active
+        if runtime_scanner_instance:
+            try:
+                findings = runtime_scanner_instance.scan(target_path)
+                all_findings.extend(findings)
+            except Exception as e:
+                logger.error(f"Error during runtime-scanner: {e}")
+
+        # Run remaining scanners concurrently
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        def run_scanner(name: str, scanner: IScanner) -> List[Dict[str, Any]]:
+            scanner_findings: List[Dict[str, Any]] = []
             if getattr(scanner, "is_global", False):
                 try:
-                    findings = scanner.scan(target_path)
-                    all_findings.extend(findings)
+                    scanner_findings = scanner.scan(target_path)
                 except Exception as e:
-                    logger.error(f"Error during global scan by {scanner_name}: {e}")
+                    logger.error(f"Error during global scan by {name}: {e}")
             else:
                 for target in targets:
                     try:
-                        findings = scanner.scan(target)
-                        all_findings.extend(findings)
+                        scanner_findings.extend(scanner.scan(target))
                     except Exception as e:
-                        logger.error(f"Error during scan by {scanner_name} on {target}: {e}")
+                        logger.error(f"Error during scan by {name} on {target}: {e}")
+            return scanner_findings
+
+        with ThreadPoolExecutor() as executor:
+            future_to_scanner = {
+                executor.submit(run_scanner, name, scanner): name
+                for name, scanner in other_scanners
+            }
+            for future in as_completed(future_to_scanner):
+                name = future_to_scanner[future]
+                try:
+                    all_findings.extend(future.result())
+                except Exception as e:
+                    logger.error(f"Scanner {name} failed: {e}")
 
         # Cache results if enabled
         if self.config.cache.enabled and self.cache_manager:
