@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Diagnostics Scan
         run: |
-          healcode scan --json > healcode-report.json
+          healcode --json scan > healcode-report.json
 
       - name: Upload Scan Artifacts
         uses: actions/upload-artifact@v4
