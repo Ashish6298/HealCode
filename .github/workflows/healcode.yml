@@ -21,7 +21,7 @@ jobs:
       - name: Install HealCode
         run: |
           python -m pip install --upgrade pip
-          pip install healcode
+          pip install -e .
 
       - name: Run Diagnostics Scan
         run: |
