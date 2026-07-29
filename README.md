@@ -10,7 +10,9 @@
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)](https://github.com/Ashish6298/HealCode) [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge)](https://github.com/Ashish6298/HealCode/actions)
 
-[![Stars](https://img.shields.io/github/stars/Ashish6298/HealCode.svg?style=for-the-badge&color=yellow)](https://github.com/Ashish6298/HealCode/stargazers) [![Downloads](https://img.shields.io/pypi/dm/healcode.svg?style=for-the-badge&color=orange)](https://pypi.org/project/healcode/)
+[![Stars](https://img.shields.io/github/stars/Ashish6298/HealCode.svg?style=for-the-badge&color=yellow)](https://github.com/Ashish6298/HealCode/stargazers)
+[![Downloads](https://static.pepy.tech/badge/healcode?style=for-the-badge)](https://pepy.tech/project/healcode)
+
 
 [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey.svg?style=for-the-badge)](#)
 
