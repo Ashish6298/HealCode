@@ -1,12 +1,50 @@
 [project]
 name = "healcode"
 version = "1.0.0"
-description = "AI-powered developer diagnostics CLI"
+description = "AI-powered developer diagnostics CLI for auditing development environments, projects, and infrastructure."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+
 authors = [
-    { name = "HealCode Maintainers" }
+    { name = "Ashish Goswami" }
 ]
+
+keywords = [
+    "healcode",
+    "developer-tools",
+    "cli",
+    "diagnostics",
+    "doctor",
+    "devops",
+    "docker",
+    "kubernetes",
+    "terraform",
+    "cloud",
+    "python",
+    "security",
+    "automation",
+    "ai"
+]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities"
+]
+
 dependencies = [
     "rich>=13.0.0",
 ]
@@ -17,11 +55,17 @@ dev = [
     "mypy>=1.0.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ashish6298/HealCode"
+Repository = "https://github.com/ashish6298/HealCode"
+Issues = "https://github.com/ashish6298/HealCode/issues"
+Documentation = "https://github.com/ashish6298/HealCode#readme"
+
 [project.scripts]
 healcode = "healcode.cli.entrypoint:main"
 
 [build-system]
-requires = ["setuptools>=61.0.0"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
