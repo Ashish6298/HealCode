@@ -43,10 +43,28 @@ class AICommand(BaseCommand):
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         target = args.target
         start = time.time()
+        is_json = getattr(args, "json", False)
 
         # Determine provider
         provider_name = "offline" if args.offline else config.ai.provider
-        provider = get_provider(provider_name)
+        try:
+            provider = get_provider(provider_name)
+        except Exception as e:
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "ai",
+                    "status": "error",
+                    "error": {
+                        "type": "ProviderError",
+                        "message": f"Failed to instantiate AI provider '{provider_name}': {e}"
+                    },
+                    "exit_code": 1
+                }, indent=4))
+            else:
+                from healcode.utils.ui import print_error
+                print_error(f"Error: Failed to instantiate AI provider '{provider_name}': {e}")
+            return 1
 
         # Run the scan pipeline first (AI never bypasses scanners)
         cache_mgr = None
@@ -87,63 +105,101 @@ class AICommand(BaseCommand):
             engine.register_scanner(CloudScanner())
             engine.register_scanner(CodeScanner())
 
-            with get_progress_bar() as progress:
-                task = progress.add_task("[cyan]Scanning...", total=100)
+            if not is_json:
+                with get_progress_bar() as progress:
+                    task = progress.add_task("[cyan]Scanning...", total=100)
+                    findings = engine.run(target)
+                    progress.update(task, completed=100)
+            else:
                 findings = engine.run(target)
-                progress.update(task, completed=100)
+
+            elapsed = time.time() - start
+
+            # Handle empty findings scenario safely
+            if not findings:
+                message = "No diagnostic findings were detected. AI analysis is skipped because the environment is completely clean."
+                if is_json:
+                    import json
+                    print(json.dumps({
+                        "command": "ai",
+                        "status": "success",
+                        "message": message,
+                        "provider": provider.name,
+                        "duration": elapsed,
+                        "analysis": {
+                            "summary": "No issues found.",
+                            "root_causes": [],
+                            "recommendations": []
+                        }
+                    }, indent=4))
+                else:
+                    print_info(message)
+                return 0
 
             # Run AI analysis
             ai_engine = AIEngine(provider=provider)
             analysis = ai_engine.analyse(findings)
 
-            # Display results
-            from rich.console import Console
-            from rich.panel import Panel
-            from rich.table import Table
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "ai",
+                    "status": "success",
+                    "provider": provider.name,
+                    "duration": elapsed,
+                    "analysis": {
+                        "summary": analysis.get("summary", ""),
+                        "root_causes": analysis.get("root_causes", []),
+                        "recommendations": analysis.get("recommendations", [])
+                    }
+                }, indent=4))
+            else:
+                from rich.console import Console
+                from rich.panel import Panel
+                from rich.table import Table
 
-            console = Console()
+                console = Console()
 
-            # Executive Summary
-            console.print(Panel(
-                analysis["summary"],
-                title="[bold cyan]AI Executive Summary[/bold cyan]",
-                border_style="cyan",
-            ))
+                # Executive Summary
+                console.print(Panel(
+                    analysis["summary"],
+                    title="[bold cyan]AI Executive Summary[/bold cyan]",
+                    border_style="cyan",
+                ))
 
-            # Root Causes
-            if analysis["root_causes"]:
-                table = Table(title="Root Cause Analysis", show_lines=True)
-                table.add_column("Group", style="bold")
-                table.add_column("Findings", justify="right")
-                table.add_column("Confidence", justify="right")
-                table.add_column("Summary")
-                for cause in analysis["root_causes"][:10]:
-                    table.add_row(
-                        cause["group"],
-                        str(cause["finding_count"]),
-                        f"{cause['confidence']}%",
-                        cause["summary"],
-                    )
-                console.print(table)
+                # Root Causes
+                if analysis["root_causes"]:
+                    table = Table(title="Root Cause Analysis", show_lines=True)
+                    table.add_column("Group", style="bold")
+                    table.add_column("Findings", justify="right")
+                    table.add_column("Confidence", justify="right")
+                    table.add_column("Summary")
+                    for cause in analysis["root_causes"][:10]:
+                        table.add_row(
+                            cause["group"],
+                            str(cause["finding_count"]),
+                            f"{cause['confidence']}%",
+                            cause["summary"],
+                        )
+                    console.print(table)
 
-            # Recommendations
-            if analysis["recommendations"]:
-                rec_table = Table(title="Top Recommendations", show_lines=True)
-                rec_table.add_column("Finding", style="bold")
-                rec_table.add_column("Risk")
-                rec_table.add_column("Est. Minutes", justify="right")
-                rec_table.add_column("Description")
-                for rec in analysis["recommendations"][:10]:
-                    rec_table.add_row(
-                        rec["finding_id"],
-                        rec["risk"],
-                        str(rec["estimated_minutes"]),
-                        rec["description"],
-                    )
-                console.print(rec_table)
+                # Recommendations
+                if analysis["recommendations"]:
+                    rec_table = Table(title="Top Recommendations", show_lines=True)
+                    rec_table.add_column("Finding", style="bold")
+                    rec_table.add_column("Risk")
+                    rec_table.add_column("Est. Minutes", justify="right")
+                    rec_table.add_column("Description")
+                    for rec in analysis["recommendations"][:10]:
+                        rec_table.add_row(
+                            rec["finding_id"],
+                            rec["risk"],
+                            str(rec["estimated_minutes"]),
+                            rec["description"],
+                        )
+                    console.print(rec_table)
 
-            elapsed = time.time() - start
-            console.print(f"\n[dim]AI Provider: {provider.name} | Duration: {elapsed:.2f}s[/dim]")
+                console.print(f"\n[dim]AI Provider: {provider.name} | Duration: {elapsed:.2f}s[/dim]")
 
             return 0
         finally:

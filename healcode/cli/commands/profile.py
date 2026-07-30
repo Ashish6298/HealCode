@@ -29,17 +29,26 @@ class ProfileCommand(BaseCommand):
 
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         manager = ConfigManager()
+        is_json = getattr(args, "json", False)
 
         if args.profile_action == "list":
-            console.print("[bold cyan]Available Scanning Profiles:[/bold cyan]\n")
-            for name, scanners in PROFILES.items():
-                scanner_list = ", ".join(scanners) if scanners else "All Scanners"
-                console.print(f" - [bold green]{name:12}[/] : {scanner_list}")
+            if is_json:
+                import json
+                print(json.dumps({"command": "profile list", "status": "success", "profiles": {name: (scanners if scanners is not None else "All") for name, scanners in PROFILES.items()}}, indent=4))
+            else:
+                console.print("[bold cyan]Available Scanning Profiles:[/bold cyan]\n")
+                for name, scanners in PROFILES.items():
+                    scanner_list = ", ".join(scanners) if scanners else "All Scanners"
+                    console.print(f" - [bold green]{name:12}[/] : {scanner_list}")
             return 0
 
         elif args.profile_action == "show":
             active = config.scan.profile or "Full"
-            console.print(f"Current active scanning profile: [bold green]{active}[/bold green]")
+            if is_json:
+                import json
+                print(json.dumps({"command": "profile show", "status": "success", "active_profile": active}, indent=4))
+            else:
+                console.print(f"Current active scanning profile: [bold green]{active}[/bold green]")
             return 0
 
         elif args.profile_action == "set":
@@ -51,13 +60,37 @@ class ProfileCommand(BaseCommand):
                     break
 
             if not matching_key:
-                print_error(f"Invalid profile name: {pname}. Available: {', '.join(PROFILES.keys())}")
+                if is_json:
+                    import json
+                    print(json.dumps({"command": "profile set", "status": "error", "message": f"Invalid profile name: {pname}", "available_profiles": list(PROFILES.keys())}, indent=4))
+                else:
+                    print_error(f"Invalid profile name: {pname}. Available: {', '.join(PROFILES.keys())}")
                 return 1
+
+            # Gracefully handle duplicate profile selections
+            active = config.scan.profile or "Full"
+            if matching_key.lower() == active.lower():
+                if is_json:
+                    import json
+                    print(json.dumps({
+                        "command": "profile set",
+                        "status": "success",
+                        "message": f"Profile '{matching_key}' is already active.",
+                        "active_profile": matching_key
+                    }, indent=4))
+                else:
+                    print_info(f"Profile '{matching_key}' is already active.")
+                return 0
 
             config.scan.profile = matching_key
             manager.config = config
             manager.save_project_config()
-            print_success(f"Successfully set active diagnostics profile to: [bold green]{matching_key}[/bold green]")
+            
+            if is_json:
+                import json
+                print(json.dumps({"command": "profile set", "status": "success", "active_profile": matching_key}, indent=4))
+            else:
+                print_success(f"Successfully set active diagnostics profile to: [bold green]{matching_key}[/bold green]")
             return 0
 
         return 1

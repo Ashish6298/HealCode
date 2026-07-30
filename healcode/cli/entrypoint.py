@@ -26,6 +26,58 @@ from healcode.utils.ui import print_error
 def main(argv: Optional[List[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
+    else:
+        argv = list(argv)
+
+    # Detect and extract global flags from argv to support any position
+    json_output = False
+    if "--json" in argv:
+        json_output = True
+        argv = [x for x in argv if x != "--json"]
+
+    no_banner = False
+    if "--no-banner" in argv:
+        no_banner = True
+        argv = [x for x in argv if x != "--no-banner"]
+
+    log_level = None
+    if "--log-level" in argv:
+        try:
+            idx = argv.index("--log-level")
+            if idx + 1 < len(argv):
+                val = argv[idx + 1]
+                if val.upper() not in ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]:
+                    if json_output:
+                        import json
+                        print(json.dumps({
+                            "status": "error",
+                            "error": {
+                                "type": "ValidationError",
+                                "message": f"Invalid logging level: {val}. Choices are TRACE, DEBUG, INFO, WARN, ERROR."
+                            },
+                            "exit_code": ExitCode.INVALID_USAGE
+                        }, indent=4))
+                    else:
+                        print_error(f"Error: Invalid logging level: {val}. Choices are TRACE, DEBUG, INFO, WARN, ERROR.")
+                    return ExitCode.INVALID_USAGE
+                log_level = val.upper()
+                argv = argv[:idx] + argv[idx+2:]
+            else:
+                if json_output:
+                    import json
+                    print(json.dumps({
+                        "status": "error",
+                        "error": {
+                            "type": "ValidationError",
+                            "message": "Error: --log-level requires an argument."
+                        },
+                        "exit_code": ExitCode.INVALID_USAGE
+                    }, indent=4))
+                else:
+                    print_error("Error: --log-level requires an argument.")
+                return ExitCode.INVALID_USAGE
+        except ValueError:
+            pass
 
     # Register CLI commands
     commands_list: List[BaseCommand] = [
@@ -48,6 +100,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     except SystemExit as e:
         # argparse handles help print and exits
         return e.code if isinstance(e.code, int) else ExitCode.INVALID_USAGE
+
+    # Override defaults with pre-processed global flags
+    args.json = json_output
+    args.no_banner = no_banner
+    if log_level is not None:
+        args.log_level = log_level
 
     # Load configuration
     try:
@@ -94,12 +152,34 @@ def main(argv: Optional[List[str]] = None) -> int:
         return exit_code
     except HealCodeError as e:
         logger.error(f"Execution failed: {e}")
-        if not json_output:
+        if json_output:
+            import json
+            print(json.dumps({
+                "command": args.command,
+                "status": "error",
+                "error": {
+                    "type": "HealCodeError",
+                    "message": str(e)
+                },
+                "exit_code": ExitCode.ERROR
+            }, indent=4))
+        else:
             print_error(f"Error: {e}")
         return ExitCode.ERROR
     except Exception as e:
         logger.exception("An unhandled unexpected exception occurred.")
-        if not json_output:
+        if json_output:
+            import json
+            print(json.dumps({
+                "command": args.command,
+                "status": "error",
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e)
+                },
+                "exit_code": ExitCode.ERROR
+            }, indent=4))
+        else:
             print_error(f"Unexpected Error: {e}")
         return ExitCode.ERROR
 

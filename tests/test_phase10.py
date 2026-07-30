@@ -83,3 +83,34 @@ def test_marketplace_mock_searches() -> None:
     args = parser.parse_args(["install", "security-hardening-pack"])
     rc = cmd.run(args, config)
     assert rc == 0
+
+
+def test_cli_json_outputs(capsys) -> None:
+    config = ProjectConfig()
+    
+    # Test profile list with --json
+    cmd = ProfileCommand()
+    parser = argparse.ArgumentParser()
+    cmd.setup_parser(parser)
+    args = parser.parse_args(["list"])
+    args.json = True
+    rc = cmd.run(args, config)
+    assert rc == 0
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["status"] == "success"
+    assert "profiles" in data
+
+    # Test marketplace search with --json
+    market_cmd = MarketplaceCommand()
+    parser_m = argparse.ArgumentParser()
+    market_cmd.setup_parser(parser_m)
+    args_m = parser_m.parse_args(["search", "rust"])
+    args_m.json = True
+    rc = market_cmd.run(args_m, config)
+    assert rc == 0
+    captured_m = capsys.readouterr()
+    data_m = json.loads(captured_m.out)
+    assert data_m["status"] == "success"
+    assert len(data_m["results"]) > 0
+

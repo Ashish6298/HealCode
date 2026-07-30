@@ -39,6 +39,7 @@ class BaselineCommand(BaseCommand):
         baseline_dir = ".healcode_baselines"
         os.makedirs(baseline_dir, exist_ok=True)
         baseline_path = os.path.join(baseline_dir, f"{args.name}.json")
+        is_json = getattr(args, "json", False)
 
         cache_mgr = None
         if config.cache.enabled:
@@ -46,6 +47,18 @@ class BaselineCommand(BaseCommand):
 
         try:
             if args.baseline_action == "create":
+                if os.path.exists(baseline_path):
+                    if is_json:
+                        print(json.dumps({
+                            "command": "baseline create",
+                            "status": "error",
+                            "message": f"Baseline '{args.name}' already exists at {baseline_path}."
+                        }, indent=4))
+                    else:
+                        print_error(f"Error: Baseline '{args.name}' already exists at {baseline_path}.")
+                        print_info("Guidance: To overwrite, please delete the existing baseline file first or choose a different name.")
+                    return 1
+
                 engine = ScanEngine(config, cache_mgr)
                 
                 # Import core scanners
@@ -80,10 +93,13 @@ class BaselineCommand(BaseCommand):
                 engine.register_scanner(CloudScanner())
                 engine.register_scanner(CodeScanner())
 
-                with get_progress_bar() as progress:
-                    task = progress.add_task("[cyan]Scanning for baseline...", total=100)
+                if not is_json:
+                    with get_progress_bar() as progress:
+                        task = progress.add_task("[cyan]Scanning for baseline...", total=100)
+                        findings = engine.run(".")
+                        progress.update(task, completed=100)
+                else:
                     findings = engine.run(".")
-                    progress.update(task, completed=100)
 
                 health_engine = HealthEngine()
                 score = health_engine.calculate_score(findings)
@@ -98,16 +114,43 @@ class BaselineCommand(BaseCommand):
                 with open(baseline_path, "w", encoding="utf-8") as f:
                     json.dump(baseline_data, f, indent=4)
 
-                print_success(f"Successfully recorded baseline '{args.name}' to: {baseline_path}")
+                if is_json:
+                    print(json.dumps({
+                        "command": "baseline create",
+                        "status": "success",
+                        "baseline_name": args.name,
+                        "path": baseline_path,
+                        "score": score
+                    }, indent=4))
+                else:
+                    print_success(f"Successfully recorded baseline '{args.name}' to: {baseline_path}")
                 return 0
 
             elif args.baseline_action == "compare":
                 if not os.path.exists(baseline_path):
-                    print_error(f"Baseline '{args.name}' does not exist at {baseline_path}")
+                    if is_json:
+                        print(json.dumps({
+                            "command": "baseline compare",
+                            "status": "error",
+                            "message": f"Baseline '{args.name}' does not exist at {baseline_path}"
+                        }, indent=4))
+                    else:
+                        print_error(f"Baseline '{args.name}' does not exist at {baseline_path}")
                     return 1
 
-                with open(baseline_path, "r", encoding="utf-8") as f:
-                    baseline_data = json.load(f)
+                try:
+                    with open(baseline_path, "r", encoding="utf-8") as f:
+                        baseline_data = json.load(f)
+                except Exception as e:
+                    if is_json:
+                        print(json.dumps({
+                            "command": "baseline compare",
+                            "status": "error",
+                            "message": f"Baseline file at {baseline_path} is malformed or corrupted: {e}"
+                        }, indent=4))
+                    else:
+                        print_error(f"Error: Baseline file at {baseline_path} is malformed or corrupted: {e}")
+                    return 1
 
                 engine = ScanEngine(config, cache_mgr)
                 
@@ -143,10 +186,13 @@ class BaselineCommand(BaseCommand):
                 engine.register_scanner(CloudScanner())
                 engine.register_scanner(CodeScanner())
 
-                with get_progress_bar() as progress:
-                    task = progress.add_task("[cyan]Scanning for comparison...", total=100)
+                if not is_json:
+                    with get_progress_bar() as progress:
+                        task = progress.add_task("[cyan]Scanning for comparison...", total=100)
+                        current_findings = engine.run(".")
+                        progress.update(task, completed=100)
+                else:
                     current_findings = engine.run(".")
-                    progress.update(task, completed=100)
 
                 health_engine = HealthEngine()
                 current_score = health_engine.calculate_score(current_findings)
@@ -158,28 +204,39 @@ class BaselineCommand(BaseCommand):
                 regressions = current_ids - base_ids
                 resolved = base_ids - current_ids
 
-                console.print(f"\n[bold cyan]HealCode Drift Report against '{args.name}':[/bold cyan]")
-                
                 old_score_val = baseline_data["score"].get("overall", 100.0)
                 new_score_val = current_score.get("overall", 100.0)
                 score_diff = new_score_val - old_score_val
-                
-                diff_str = f"+{score_diff:.2f}%" if score_diff >= 0 else f"{score_diff:.2f}%"
-                console.print(f" - Health Score: {old_score_val}% -> {new_score_val}% ({diff_str})")
-                
-                if regressions:
-                    console.print(f" - [bold red]Regressions (New Issues):[/bold red] {len(regressions)}")
-                    for r in regressions:
-                        console.print(f"   * [red]{r}[/]")
-                else:
-                    console.print(" - [bold green]Regressions (New Issues):[/bold green] None")
 
-                if resolved:
-                    console.print(f" - [bold green]Resolved Issues:[/bold green] {len(resolved)}")
-                    for res in resolved:
-                        console.print(f"   * [green]{res}[/]")
+                if is_json:
+                    print(json.dumps({
+                        "command": "baseline compare",
+                        "status": "success",
+                        "baseline_name": args.name,
+                        "old_score": old_score_val,
+                        "new_score": new_score_val,
+                        "drift": score_diff,
+                        "regressions": list(regressions),
+                        "resolved": list(resolved)
+                    }, indent=4))
                 else:
-                    console.print(" - [bold yellow]Resolved Issues:[/bold yellow] None")
+                    console.print(f"\n[bold cyan]HealCode Drift Report against '{args.name}':[/bold cyan]")
+                    diff_str = f"+{score_diff:.2f}%" if score_diff >= 0 else f"{score_diff:.2f}%"
+                    console.print(f" - Health Score: {old_score_val}% -> {new_score_val}% ({diff_str})")
+                    
+                    if regressions:
+                        console.print(f" - [bold red]Regressions (New Issues):[/bold red] {len(regressions)}")
+                        for r in regressions:
+                            console.print(f"   * [red]{r}[/]")
+                    else:
+                        console.print(" - [bold green]Regressions (New Issues):[/bold green] None")
+
+                    if resolved:
+                        console.print(f" - [bold green]Resolved Issues:[/bold green] {len(resolved)}")
+                        for res in resolved:
+                            console.print(f"   * [green]{res}[/]")
+                    else:
+                        console.print(" - [bold yellow]Resolved Issues:[/bold yellow] None")
 
                 return 0
 

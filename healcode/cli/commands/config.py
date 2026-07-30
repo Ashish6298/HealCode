@@ -29,21 +29,47 @@ class ConfigCommand(BaseCommand):
 
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         manager = ConfigManager()
+        is_json = getattr(args, "json", False)
         
         if args.config_action == "init":
             if os.path.exists(manager.project_config_path):
-                print_info(f"Configuration file already exists at {manager.project_config_path}")
+                if is_json:
+                    import json
+                    print(json.dumps({
+                        "command": "config init",
+                        "status": "success",
+                        "message": "Configuration file already exists.",
+                        "path": manager.project_config_path
+                    }, indent=4))
+                else:
+                    print_info(f"Configuration file already exists at {manager.project_config_path}")
                 return 0
+            
             manager.config = ProjectConfig()
             manager.save_project_config()
-            print_success(f"Initialized project configuration file: {manager.project_config_path}")
+            
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "config init",
+                    "status": "success",
+                    "message": "Initialized project configuration file successfully.",
+                    "path": manager.project_config_path
+                }, indent=4))
+            else:
+                print_success(f"Initialized project configuration file: {manager.project_config_path}")
             return 0
 
         elif args.config_action == "show":
             manager.load()
-            if getattr(args, "json", False):
+            if is_json:
                 import json
-                print(json.dumps(manager._model_to_dict(manager.config), indent=4))
+                print(json.dumps({
+                    "command": "config show",
+                    "status": "success",
+                    "path": manager.project_config_path,
+                    "configuration": manager._model_to_dict(manager.config)
+                }, indent=4))
             else:
                 console.print(f"[bold]Active Configuration Path:[/] {manager.project_config_path}")
                 console.print_json(data=manager._model_to_dict(manager.config))

@@ -36,13 +36,62 @@ class ScanCommand(BaseCommand):
 
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         target = args.target
+        is_json = getattr(args, "json", False) or args.format == "json"
+        
+        # Validate target path existence
+        if not os.path.exists(target):
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "scan",
+                    "status": "error",
+                    "error": {
+                        "type": "ValidationError",
+                        "message": f"Target path does not exist: {target}"
+                    },
+                    "exit_code": 1
+                }, indent=4))
+            else:
+                from healcode.utils.ui import print_error
+                print_error(f"Error: Target path '{target}' does not exist.")
+                print_info("Guidance: Please specify a valid file or directory path, or omit the argument to scan the current directory ('.').")
+            return 1
+
+        # Validate profile name if supplied
+        if args.profile:
+            from healcode.core.profiles import PROFILES
+            # Case-insensitive comparison is friendlier
+            matched_profile = None
+            for p in PROFILES:
+                if p.lower() == args.profile.lower():
+                    matched_profile = p
+                    break
+            
+            if not matched_profile:
+                if is_json:
+                    import json
+                    print(json.dumps({
+                        "command": "scan",
+                        "status": "error",
+                        "error": {
+                            "type": "ValidationError",
+                            "message": f"Invalid diagnostics profile '{args.profile}'. Available: {', '.join(PROFILES.keys())}"
+                        },
+                        "exit_code": 1
+                    }, indent=4))
+                else:
+                    from healcode.utils.ui import print_error
+                    print_error(f"Error: Invalid diagnostics profile '{args.profile}'.")
+                    print_info(f"Available profiles: {', '.join(PROFILES.keys())}")
+                    print_info("Guidance: Run 'healcode profile list' to see all available profiles.")
+                return 1
+            
+            config.scan.profile = matched_profile
+
         start_time = time.time()
 
         if args.no_cache:
             config.cache.enabled = False
-
-        if args.profile:
-            config.scan.profile = args.profile
 
         cache_mgr = None
         if config.cache.enabled:

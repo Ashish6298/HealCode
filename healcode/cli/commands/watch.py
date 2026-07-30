@@ -32,8 +32,33 @@ class WatchCommand(BaseCommand):
 
     def run(self, args: argparse.Namespace, config: ProjectConfig) -> int:
         target = os.path.abspath(args.target)
-        print_info(f"Starting watch mode on: [bold cyan]{target}[/] (Check interval: {args.interval}s)")
-        print_info("Press Ctrl+C to stop.")
+        is_json = getattr(args, "json", False)
+
+        # Validate target directory existence
+        if not os.path.exists(target) or not os.path.isdir(target):
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "watch",
+                    "status": "error",
+                    "error": {
+                        "type": "ValidationError",
+                        "message": f"Target watch directory does not exist or is not a directory: {target}"
+                    },
+                    "exit_code": 1
+                }, indent=4))
+            else:
+                from healcode.utils.ui import print_error
+                print_error(f"Error: Target watch directory '{target}' does not exist or is not a directory.")
+                print_info("Guidance: Please specify a valid folder path to monitor.")
+            return 1
+
+        if is_json:
+            import json
+            print(json.dumps({"command": "watch", "status": "started", "target": target, "interval": args.interval}, indent=4))
+        else:
+            print_info(f"Starting watch mode on: [bold cyan]{target}[/] (Check interval: {args.interval}s)")
+            print_info("Press Ctrl+C to stop.")
 
         def get_mtimes():
             mtimes = {}
@@ -49,12 +74,12 @@ class WatchCommand(BaseCommand):
                         pass
             return mtimes
 
-        last_mtimes = get_mtimes()
-
-        # Run initial scan
-        self._run_scan(target, config)
-
         try:
+            last_mtimes = get_mtimes()
+
+            # Run initial scan
+            self._run_scan(target, config, is_json)
+
             while True:
                 time.sleep(args.interval)
                 current_mtimes = get_mtimes()
@@ -70,20 +95,44 @@ class WatchCommand(BaseCommand):
                         changed.append(fp)
 
                 if changed:
-                    print_success(f"Detected change in {len(changed)} file(s). Triggering incremental rescan...")
-                    for fp in changed[:5]:
-                        console.print(f" - [dim]{fp}[/]")
-                    if len(changed) > 5:
-                        console.print(f" - ... and {len(changed) - 5} more files.")
+                    if is_json:
+                        import json
+                        print(json.dumps({"command": "watch", "status": "change_detected", "changed_files": changed}, indent=4))
+                    else:
+                        print_success(f"Detected change in {len(changed)} file(s). Triggering incremental rescan...")
+                        for fp in changed[:5]:
+                            console.print(f" - [dim]{fp}[/]")
+                        if len(changed) > 5:
+                            console.print(f" - ... and {len(changed) - 5} more files.")
                     
-                    self._run_scan(target, config)
+                    self._run_scan(target, config, is_json)
                     last_mtimes = current_mtimes
 
         except KeyboardInterrupt:
-            console.print("\n[bold yellow]Stopping watch mode.[/bold yellow]")
+            if is_json:
+                import json
+                print(json.dumps({"command": "watch", "status": "stopped"}, indent=4))
+            else:
+                console.print("\n[bold yellow]Stopping watch mode.[/bold yellow]")
             return 0
+        except Exception as e:
+            if is_json:
+                import json
+                print(json.dumps({
+                    "command": "watch",
+                    "status": "error",
+                    "error": {
+                        "type": type(e).__name__,
+                        "message": f"Unexpected error during watch loop: {e}"
+                    },
+                    "exit_code": 1
+                }, indent=4))
+            else:
+                from healcode.utils.ui import print_error
+                print_error(f"Error: Unexpected error during watch loop: {e}")
+            return 1
 
-    def _run_scan(self, target: str, config: ProjectConfig):
+    def _run_scan(self, target: str, config: ProjectConfig, is_json: bool = False):
         cache_mgr = None
         if config.cache.enabled:
             cache_mgr = CacheManager(config.cache.db_path)
@@ -127,7 +176,11 @@ class WatchCommand(BaseCommand):
             health_engine = HealthEngine()
             score = health_engine.calculate_score(findings)
             
-            console.print(f"[bold green]Scan Completed.[/] Overall Health Score: [bold cyan]{score.get('overall')}%[/]")
+            if is_json:
+                import json
+                print(json.dumps({"command": "watch_scan", "status": "success", "score": score, "findings": findings}, indent=4))
+            else:
+                console.print(f"[bold green]Scan Completed.[/] Overall Health Score: [bold cyan]{score.get('overall')}%[/]")
         finally:
             if cache_mgr:
                 cache_mgr.close()
