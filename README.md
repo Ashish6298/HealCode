@@ -2,22 +2,57 @@
 
 <br>
 
-<table align="center">
+<div align="center">
+
+<table>
+<tr>
+<td align="center" width="180">
+
+### Version
+<img src="https://img.shields.io/badge/v1.0.0-2563EB?style=for-the-badge">
+
+</td>
+
+<td align="center" width="180">
+
+### Open Source
+<img src="https://img.shields.io/badge/Open%20Source-Community-F97316?style=for-the-badge&logo=github&logoColor=white">
+
+</td>
+
+<td align="center" width="180">
+
+### Stars
+<img src="https://img.shields.io/github/stars/Ashish6298/HealCode?style=for-the-badge&color=facc15">
+
+</td>
+</tr>
+
 <tr>
 <td align="center">
 
-<div align="center">
-
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)](https://github.com/Ashish6298/HealCode) [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge)](https://github.com/Ashish6298/HealCode/actions)
-
-[![Stars](https://img.shields.io/github/stars/Ashish6298/HealCode.svg?style=for-the-badge&color=yellow)](https://github.com/Ashish6298/HealCode/stargazers)
+### Downloads
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/healcode?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREEN&right_color=BLUE&left_text=DOWNLOADS)](https://pepy.tech/projects/healcode)
-[![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey.svg?style=for-the-badge)](#)
 
-</div>
+</td>
+
+<td align="center">
+
+### Python
+<img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white">
+
+</td>
+
+<td align="center">
+
+### Platform
+<img src="https://img.shields.io/badge/Win│Linux│macOS-lightgrey?style=for-the-badge">
+
 </td>
 </tr>
 </table>
+
+</div>
 
 <br>
 
@@ -33,7 +68,7 @@
 
 ### 🌟 Getting to Know HealCode
 - [Overview](#overview)
-- [The Problem](#-the-problem)
+- [The Problem](#%EF%B8%8F-the-problem)
 - [The Solution](#-the-solution)
 - [Who Is HealCode For?](#-who-is-healcode-for)
 - [HealCode vs. Doing It Manually](#️-healcode-vs-doing-it-manually)
@@ -51,9 +86,7 @@
 
 ### 🛠️ Reference
 - [Commands Reference](#️-commands-reference)
-- [Exit Codes](#-exit-codes)
 - [Understanding Your Health Score](#-understanding-your-health-score)
-- [CI/CD Integration](#-cicd-integration)
 - [Documentation Hub](#-documentation-hub)
 
 ### 🤝 Community & Project
