@@ -32,8 +32,7 @@ def test_cli_bare_command_shows_help(capsys) -> None:
     exit_code = main([])
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert "usage: healcode" in captured.out
-    assert "Commands" in captured.out
+    assert "Quick Start" in captured.out
 
 
 def test_cli_no_banner_flag(capsys) -> None:

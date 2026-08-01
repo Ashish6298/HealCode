@@ -6,9 +6,9 @@ import os
 from enum import IntEnum
 
 # Project metadata
-VERSION = "1.0.0"
+VERSION = "1.2.0"
 APP_NAME = "HealCode"
-APP_DESCRIPTION = "AI-powered developer diagnostics CLI"
+APP_DESCRIPTION = "A Developer Diagnostics CLI"
 
 # Exit codes
 class ExitCode(IntEnum):

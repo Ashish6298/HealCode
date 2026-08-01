@@ -1,7 +1,7 @@
 [project]
 name = "healcode"
-version = "1.0.0"
-description = "AI-powered developer diagnostics CLI for auditing development environments, projects, and infrastructure."
+version = "1.2.0"
+description = "A Developer Diagnostics CLI for auditing development environments, projects, and infrastructure."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

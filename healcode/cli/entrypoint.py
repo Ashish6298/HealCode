@@ -93,7 +93,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     ]
     commands = {cmd.name: cmd for cmd in commands_list}
 
+    from healcode.cli.parser import HealCodeArgumentParser
     parser = create_parser(commands)
+    if isinstance(parser, HealCodeArgumentParser):
+        parser.show_full_help = any(x in argv for x in ["-h", "--help"])
+        parser.json_output = json_output
     
     try:
         args = parser.parse_args(argv)
