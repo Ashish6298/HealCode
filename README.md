@@ -9,7 +9,9 @@
 <td align="center" width="180">
 
 ### Version
-<img src="https://img.shields.io/badge/v1.0.0-2563EB?style=for-the-badge">
+<a href="https://pypi.org/project/healcode/">
+  <img src="https://img.shields.io/pypi/v/healcode?style=for-the-badge" alt="PyPI Version">
+</a>
 
 </td>
 
